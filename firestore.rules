@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper Functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -21,50 +22,66 @@ service cloud.firestore {
       );
     }
 
-    // Default deny all
+    // Default deny all (Global Safety Net)
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Admins registry
+    // Admins Registry
     match /admins/{adminId} {
-      allow read: if isSignedIn();
+      allow read: if isOwner(adminId) || isAdmin();
       allow write: if isAdmin();
     }
 
-    // User Profile
+    // User Profile: Strict Per-User Isolation
+    // Each user can ONLY read and write their OWN profile data
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow list: if isAdmin(); // Non-admins CANNOT list or scrape other users
+
       allow create: if isOwner(userId) &&
+        isValidId(userId) &&
         request.resource.data.id == userId &&
         request.resource.data.email is string &&
         request.resource.data.email.size() <= 256 &&
         request.resource.data.displayName is string &&
         request.resource.data.displayName.size() <= 120;
-      allow update: if (isOwner(userId) || isAdmin()) &&
-        request.resource.data.id == userId;
-      allow delete: if isAdmin();
 
-      // Subcollection: Lesson Progress per user
+      allow update: if (isOwner(userId) || isAdmin()) &&
+        isValidId(userId) &&
+        request.resource.data.id == userId &&
+        request.resource.data.email == resource.data.email; // Email is immutable
+
+      allow delete: if isOwner(userId) || isAdmin();
+
+      // Subcollection: Progress Belajar (Per-user private data)
+      // Setiap user HANYA bisa membaca dan menulis progress belajarnya sendiri
       match /progress/{lessonId} {
         allow read: if isOwner(userId) || isAdmin();
+        
         allow create, update: if isOwner(userId) &&
+          isValidId(lessonId) &&
           request.resource.data.userId == userId &&
           request.resource.data.lessonId == lessonId;
+
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // Subcollection: Saved Vocabulary flashcards per user
+      // Subcollection: Bank Mufradat Tersimpan (Per-user private data)
+      // Setiap user HANYA bisa membaca dan menulis kosakata pribadinya sendiri
       match /vocabulary/{vocabId} {
         allow read: if isOwner(userId) || isAdmin();
+
         allow create, update: if isOwner(userId) &&
-          request.resource.data.userId == userId;
+          isValidId(vocabId) &&
+          request.resource.data.userId == userId &&
+          request.resource.data.id == vocabId;
+
         allow delete: if isOwner(userId) || isAdmin();
       }
     }
 
-    // Courses catalog (Publicly readable by signed in users, editable by admin)
+    // Courses Catalog: Publicly readable for learners, writable only by admin
     match /courses/{courseId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
