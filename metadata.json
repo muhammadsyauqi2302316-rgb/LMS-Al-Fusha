@@ -1,0 +1,8 @@
+{
+  "name": "Al-Fusha LMS - Pembelajaran Bahasa Arab Interaktif",
+  "description": "Learning Management System (LMS) Bahasa Arab interaktif dengan materi Nahwu, Shorof, Mufradat, Percakapan, kuis interaktif, analisis I'rab AI, dan pelacakan progress per-siswa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

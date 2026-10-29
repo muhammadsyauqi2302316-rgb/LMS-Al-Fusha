@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'muhammad.syauqi.2302316@students.um.ac.id' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Admins registry
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) &&
+        request.resource.data.id == userId &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() <= 256 &&
+        request.resource.data.displayName is string &&
+        request.resource.data.displayName.size() <= 120;
+      allow update: if (isOwner(userId) || isAdmin()) &&
+        request.resource.data.id == userId;
+      allow delete: if isAdmin();
+
+      // Subcollection: Lesson Progress per user
+      match /progress/{lessonId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) &&
+          request.resource.data.userId == userId &&
+          request.resource.data.lessonId == lessonId;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Subcollection: Saved Vocabulary flashcards per user
+      match /vocabulary/{vocabId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) &&
+          request.resource.data.userId == userId;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Courses catalog (Publicly readable by signed in users, editable by admin)
+    match /courses/{courseId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information in the Arabic LMS",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "User display name"
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Avatar URL"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["student", "admin"],
+          "description": "Role in LMS"
+        },
+        "xp": {
+          "type": "number",
+          "description": "Experience points gained from studying and quizzes"
+        },
+        "streak": {
+          "type": "number",
+          "description": "Daily study streak"
+        },
+        "level": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Student Arabic mastery level"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Creation timestamp ISO string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Last update timestamp ISO string"
+        }
+      },
+      "required": ["id", "email", "displayName", "role"]
+    },
+    "LessonProgress": {
+      "title": "LessonProgress",
+      "description": "Progress of a user on a specific Arabic lesson",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Owner UID"
+        },
+        "lessonId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Lesson ID"
+        },
+        "courseId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Course ID"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the lesson was completed"
+        },
+        "quizScore": {
+          "type": "number",
+          "description": "Quiz score percentage (0-100)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Last studied timestamp ISO string"
+        }
+      },
+      "required": ["userId", "lessonId", "courseId", "completed"]
+    },
+    "SavedVocabulary": {
+      "title": "SavedVocabulary",
+      "description": "Custom or bookmarked Arabic vocabulary item per user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Vocab ID"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Owner UID"
+        },
+        "arabic": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Arabic text with vocalization"
+        },
+        "transliteration": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Latin transliteration"
+        },
+        "meaning": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Indonesian translation"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Category or topic"
+        },
+        "mastered": {
+          "type": "boolean",
+          "description": "Whether user marked it as mastered"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Saved timestamp"
+        }
+      },
+      "required": ["id", "userId", "arabic", "meaning"]
+    },
+    "LmsCourse": {
+      "title": "LmsCourse",
+      "description": "Course in Arabic LMS catalog",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Course ID"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Course title in Indonesian"
+        },
+        "titleArabic": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Course title in Arabic"
+        },
+        "level": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Mubtadi', Mutawassith, Mutaqaddim"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Nahwu, Shorof, Hiwar, Mufradat, Qiraah"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Course description"
+        },
+        "lessonsCount": {
+          "type": "number",
+          "description": "Number of lessons"
+        }
+      },
+      "required": ["id", "title", "titleArabic", "level", "category"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profiles with individual data isolation"
+    },
+    "/users/{userId}/progress/{lessonId}": {
+      "schema": { "$ref": "#/entities/LessonProgress" },
+      "description": "Stores individual lesson progress per user"
+    },
+    "/users/{userId}/vocabulary/{vocabId}": {
+      "schema": { "$ref": "#/entities/SavedVocabulary" },
+      "description": "Stores saved/bookmarked vocabulary flashcards per user"
+    },
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/LmsCourse" },
+      "description": "Public course catalog for all learners, manageable by admin"
+    }
+  }
+}
